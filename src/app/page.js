@@ -1,12 +1,10 @@
 "use client";
 import { useState, useCallback } from "react";
 
-const categories = ["Real", "AI", "2D", "3D"];
+const categories = ["AI", "Real"];
 const colors = {
-  Real: "from-green-400 to-teal-500",
   AI: "from-purple-400 to-pink-500",
-  "2D": "from-yellow-400 to-orange-500",
-  "3D": "from-blue-400 to-cyan-500",
+  Real: "from-green-400 to-teal-500",
 };
 
 export default function Home() {
@@ -14,8 +12,8 @@ export default function Home() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Replace with your actual Render backend URL
-  const BACKEND_URL = "https://veritas-backend-h720.onrender.com/";
+  // Replace with your actual backend URL
+  const BACKEND_URL = "https://veritas-backend-h720.onrender.com/predict";
 
   const handleFile = useCallback(async (file) => {
     if (!file) return;
