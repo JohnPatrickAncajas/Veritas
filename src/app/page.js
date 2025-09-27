@@ -1,7 +1,6 @@
 "use client";
 import { useState, useCallback } from "react";
 
-const categories = ["AI", "Real"];
 const colors = {
   AI: "from-purple-400 to-pink-500",
   Real: "from-green-400 to-teal-500",
@@ -11,14 +10,15 @@ export default function Home() {
   const [preview, setPreview] = useState(null);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const BACKEND_URL = "https://veritas-backend-h720.onrender.com/predict";
 
   const handleFile = useCallback(async (file) => {
     if (!file) return;
-
     setPreview(URL.createObjectURL(file));
     setSelected(null);
+    setError(null);
     setLoading(true);
 
     try {
@@ -33,12 +33,13 @@ export default function Home() {
       if (!res.ok) throw new Error("Prediction failed");
 
       const data = await res.json();
-      const predictedLabel = categories[data.class_index] || "Unknown";
+      if (data.error) throw new Error(data.error);
 
+      const predictedLabel = data.class_label || "Unknown";
       setSelected(predictedLabel);
     } catch (err) {
-      console.error(err);
-      setSelected("Error");
+      setError(err.message || "Error");
+      setSelected(null);
     } finally {
       setLoading(false);
     }
@@ -77,7 +78,7 @@ export default function Home() {
           <div
             className={`w-8 h-[600px] rounded-full transition-all duration-500 ${
               selected
-                ? `bg-gradient-to-b ${colors[selected]} shadow-[0_0_30px_5px_rgba(0,0,0,0.4)]`
+                ? `bg-gradient-to-b ${colors[selected] || "from-gray-400 to-gray-600"} shadow-[0_0_30px_5px_rgba(0,0,0,0.4)]`
                 : "bg-gray-300 dark:bg-gray-700"
             }`}
           ></div>
@@ -125,7 +126,11 @@ export default function Home() {
             </p>
           )}
 
-          {selected && !loading && (
+          {error && !loading && (
+            <p className="mt-4 font-semibold text-lg text-red-500">{error}</p>
+          )}
+
+          {selected && !loading && !error && (
             <p
               className="mt-4 font-semibold text-lg opacity-0 animate-fadeInUp"
               key={selected}
@@ -140,7 +145,7 @@ export default function Home() {
           <div
             className={`w-8 h-[600px] rounded-full transition-all duration-500 ${
               selected
-                ? `bg-gradient-to-b ${colors[selected]} shadow-[0_0_30px_5px_rgba(0,0,0,0.4)]`
+                ? `bg-gradient-to-b ${colors[selected] || "from-gray-400 to-gray-600"} shadow-[0_0_30px_5px_rgba(0,0,0,0.4)]`
                 : "bg-gray-300 dark:bg-gray-700"
             }`}
           ></div>
