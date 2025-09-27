@@ -15,7 +15,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   // Replace with your actual Render backend URL
-  const BACKEND_URL = "https://efficientnet-backend.onrender.com/predict";
+  const BACKEND_URL = "https://veritas-backend-h720.onrender.com/";
 
   const handleFile = useCallback(async (file) => {
     if (!file) return;
