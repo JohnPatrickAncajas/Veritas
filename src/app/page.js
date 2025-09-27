@@ -12,7 +12,6 @@ export default function Home() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Replace with your actual backend URL
   const BACKEND_URL = "https://veritas-backend-h720.onrender.com/predict";
 
   const handleFile = useCallback(async (file) => {
@@ -58,7 +57,6 @@ export default function Home() {
 
   return (
     <div className="font-sans min-h-screen flex flex-col bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100">
-      {/* Navbar */}
       <nav className="w-full flex items-center justify-between px-8 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
         <div className="text-xl font-bold tracking-wide">Veritas</div>
         <div className="flex gap-8 text-sm sm:text-base font-medium">
@@ -114,7 +112,7 @@ export default function Home() {
             {loading && (
               <>
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-500/10 to-transparent animate-pulse"></div>
-                <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute inset-0 overflow-hidden fade-out-when-done">
                   <div className="scanner-line"></div>
                 </div>
               </>
@@ -171,7 +169,7 @@ export default function Home() {
             rgba(255, 0, 0, 0.2)
           );
           box-shadow: 0 0 20px rgba(255, 0, 0, 0.9);
-          animation: scan 1s ease-in-out 3;
+          animation: scan 1s ease-in-out infinite;
         }
         @keyframes fadeInUp {
           from {
@@ -185,6 +183,9 @@ export default function Home() {
         }
         .animate-fadeInUp {
           animation: fadeInUp 0.6s ease forwards;
+        }
+        .fade-out-when-done {
+          transition: opacity 0.5s ease;
         }
       `}</style>
     </div>
