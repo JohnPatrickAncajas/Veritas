@@ -74,17 +74,32 @@ export default function Home() {
       </nav>
 
       <main className="flex flex-1 px-4 py-8 gap-4">
+        {/* Left gradient bar */}
         <div className="flex items-center justify-center">
           <div
             className={`w-8 h-[600px] rounded-full transition-all duration-500 ${
               selected
-                ? `bg-gradient-to-b ${colors[selected] || "from-gray-400 to-gray-600"} shadow-[0_0_30px_5px_rgba(0,0,0,0.4)]`
+                ? `bg-gradient-to-b ${
+                    colors[selected] || "from-gray-400 to-gray-600"
+                  } shadow-[0_0_30px_5px_rgba(0,0,0,0.4)]`
                 : "bg-gray-300 dark:bg-gray-700"
             }`}
           ></div>
         </div>
 
+        {/* Main content */}
         <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
+          {/* Title & Description */}
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold mb-2">
+              Veritas AI or Real Face Detection
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Drag a picture into the square below or click on it to upload.
+            </p>
+          </div>
+
+          {/* Upload square */}
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
@@ -120,6 +135,7 @@ export default function Home() {
             )}
           </div>
 
+          {/* Status messages */}
           {loading && (
             <p className="mt-4 font-medium text-red-500 animate-pulse">
               Processing...
@@ -141,11 +157,14 @@ export default function Home() {
           )}
         </div>
 
+        {/* Right gradient bar */}
         <div className="flex items-center justify-center">
           <div
             className={`w-8 h-[600px] rounded-full transition-all duration-500 ${
               selected
-                ? `bg-gradient-to-b ${colors[selected] || "from-gray-400 to-gray-600"} shadow-[0_0_30px_5px_rgba(0,0,0,0.4)]`
+                ? `bg-gradient-to-b ${
+                    colors[selected] || "from-gray-400 to-gray-600"
+                  } shadow-[0_0_30px_5px_rgba(0,0,0,0.4)]`
                 : "bg-gray-300 dark:bg-gray-700"
             }`}
           ></div>

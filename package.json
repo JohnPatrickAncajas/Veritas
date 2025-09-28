@@ -1,6 +1,6 @@
 {
-  "name": "veritas",
-  "version": "0.1.0",
+  "name": "veritas-ai-or-real-face-detection",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
