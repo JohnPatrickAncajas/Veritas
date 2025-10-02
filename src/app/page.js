@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback } from "react";
+import Image from "next/image";
 
 const colors = {
   AI: "from-purple-400 to-pink-500",
@@ -8,11 +9,12 @@ const colors = {
   "3D": "from-blue-400 to-indigo-500",
 };
 
-export default function Home() {
+export default function PredictPage() {
   const [preview, setPreview] = useState(null);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [dragging, setDragging] = useState(false);
 
   const BACKEND_URL = "https://veritas-backend-h720.onrender.com/predict";
 
@@ -47,65 +49,68 @@ export default function Home() {
     }
   }, []);
 
-  const handleChange = (e) => handleFile(e.target.files[0]);
+  const handleChange = (e) => handleFile(e.target.files?.[0]);
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    handleFile(e.dataTransfer.files[0]);
+    setDragging(false);
+    handleFile(e.dataTransfer.files?.[0]);
   };
   const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    setDragging(true);
   };
+  const handleDragLeave = () => setDragging(false);
+
+  // Left pills (original left side) – added 20 to all widths
+  const leftPositions = ["justify-start", "justify-center", "justify-end", "justify-center"];
+  const leftWidths = ["w-80", "w-72", "w-88", "w-64"];
+
+  // Right pills (different rules for visual variety) – added 20
+  const rightPositions = ["justify-end", "justify-start", "justify-center", "justify-end"];
+  const rightWidths = ["w-68", "w-84", "w-60", "w-76"];
 
   return (
-    <div className="font-sans min-h-screen flex flex-col bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100">
-      <nav className="w-full flex items-center justify-between px-8 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
-        <div className="text-xl font-bold tracking-wide">Veritas</div>
-        <div className="flex gap-8 text-sm sm:text-base font-medium">
-          <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">
-            Detect
-          </a>
-          <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">
-            History
-          </a>
-          <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">
-            Profile
-          </a>
-        </div>
-      </nav>
+    <div className="font-sans min-h-screen flex flex-col bg-gradient-to-b from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-gray-900 dark:text-gray-100">
+      {/* Hero / Title */}
+      <header className="px-6 py-10 text-center">
+        <h1 className="text-4xl font-extrabold tracking-tight mb-3 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+          Veritas – Face Type Detection
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 max-w-lg mx-auto">
+          Upload an image and Veritas will classify it as <b>AI</b>, <b>Real</b>, <b>2D</b>, or <b>3D</b>.
+        </p>
+      </header>
 
-      <main className="flex flex-1 px-4 py-8 gap-4">
-        {/* Left gradient bar */}
-        <div className="flex items-center justify-center">
-          <div
-            className={`w-8 h-[600px] rounded-full transition-all duration-500 ${
-              selected
-                ? `bg-gradient-to-b ${
-                    colors[selected] || "from-gray-400 to-gray-600"
-                  } shadow-[0_0_30px_5px_rgba(0,0,0,0.4)]`
-                : "bg-gray-300 dark:bg-gray-700"
-            }`}
-          ></div>
+      {/* Main section */}
+      <main className="flex flex-1 px-4 pb-12 gap-6 justify-center">
+        {/* Left staggered pills */}
+        <div className="hidden md:flex flex-col justify-between h-[500px] gap-2">
+          {leftWidths.map((w, i) => (
+            <div key={i} className={`flex ${leftPositions[i]} w-full`}>
+              <div
+                className={`h-4 ${w} rounded-full transition-all duration-500 ${
+                  selected
+                    ? `bg-gradient-to-r ${colors[selected] || "from-gray-400 to-gray-600"} animate-pulse shadow-[0_0_20px_5px_rgba(0,0,0,0.3)]`
+                    : "bg-gray-300 dark:bg-gray-700"
+                }`}
+              />
+            </div>
+          ))}
         </div>
 
-        {/* Main content */}
+        {/* Upload + Preview */}
         <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
-          {/* Title & Description */}
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold mb-2">
-              Veritas Face Type Detection
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Drag a picture into the square below or click on it to upload.
-            </p>
-          </div>
-
-          {/* Upload square */}
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
-            className="relative w-full max-w-md h-[500px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center overflow-hidden hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer"
+            onDragLeave={handleDragLeave}
+            className={`relative w-full max-w-md h-[450px] border-2 border-dashed rounded-xl flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-300 ${
+              dragging
+                ? "border-blue-500 shadow-[0_0_25px_5px_rgba(59,130,246,0.5)]"
+                : "border-gray-300 dark:border-gray-600"
+            }`}
           >
             <input
               type="file"
@@ -116,11 +121,15 @@ export default function Home() {
             />
 
             {preview && !loading ? (
-              <img
-                src={preview}
-                alt="preview"
-                className="w-full h-full object-contain"
-              />
+              <div className="relative w-full h-full">
+                <Image
+                  src={preview}
+                  alt="preview"
+                  fill
+                  style={{ objectFit: "contain" }}
+                  className="backdrop-blur-md rounded-lg"
+                />
+              </div>
             ) : !preview && !loading ? (
               <p className="text-gray-500 dark:text-gray-400 text-center px-4">
                 Drag & drop an image here, or click to select
@@ -128,36 +137,26 @@ export default function Home() {
             ) : null}
 
             {loading && (
-              <>
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-500/10 to-transparent animate-pulse"></div>
-                <div className="absolute inset-0 overflow-hidden fade-out-when-done">
-                  <div className="scanner-line"></div>
-                </div>
-              </>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-32 h-32 border-4 border-t-blue-500 border-r-purple-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+              </div>
             )}
           </div>
 
           {/* Status messages */}
           {loading && (
-            <p className="mt-4 font-medium text-red-500 animate-pulse">
-              Processing...
-            </p>
+            <p className="mt-4 font-medium text-blue-500 animate-pulse">Processing...</p>
           )}
-
           {error && !loading && (
             <p className="mt-4 font-semibold text-lg text-red-500">{error}</p>
           )}
-
           {selected && !loading && !error && (
-            <p
-              className="mt-4 font-semibold text-lg opacity-0 animate-fadeInUp"
-              key={selected}
-            >
+            <p className="mt-6 font-bold text-xl opacity-0 animate-fadeInUp drop-shadow-lg" key={selected}>
               Detected as:{" "}
               <span
                 className={`capitalize bg-clip-text text-transparent bg-gradient-to-r ${
                   colors[selected] || "from-gray-400 to-gray-600"
-                }`}
+                } animate-gradient-x`}
               >
                 {selected}
               </span>
@@ -165,48 +164,28 @@ export default function Home() {
           )}
         </div>
 
-        {/* Right gradient bar */}
-        <div className="flex items-center justify-center">
-          <div
-            className={`w-8 h-[600px] rounded-full transition-all duration-500 ${
-              selected
-                ? `bg-gradient-to-b ${
-                    colors[selected] || "from-gray-400 to-gray-600"
-                  } shadow-[0_0_30px_5px_rgba(0,0,0,0.4)]`
-                : "bg-gray-300 dark:bg-gray-700"
-            }`}
-          ></div>
+        {/* Right staggered pills */}
+        <div className="hidden md:flex flex-col justify-between h-[500px] gap-2">
+          {rightWidths.map((w, i) => (
+            <div key={i} className={`flex ${rightPositions[i]} w-full`}>
+              <div
+                className={`h-4 ${w} rounded-full transition-all duration-500 ${
+                  selected
+                    ? `bg-gradient-to-r ${colors[selected] || "from-gray-400 to-gray-600"} animate-pulse shadow-[0_0_20px_5px_rgba(0,0,0,0.3)]`
+                    : "bg-gray-300 dark:bg-gray-700"
+                }`}
+              />
+            </div>
+          ))}
         </div>
       </main>
 
+      {/* Styles for animations */}
       <style jsx>{`
-        @keyframes scan {
-          0% {
-            top: 0;
-          }
-          100% {
-            top: 100%;
-          }
-        }
-        .scanner-line {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 5px;
-          background: linear-gradient(
-            to right,
-            rgba(255, 0, 0, 0.2),
-            rgba(255, 0, 0, 1),
-            rgba(255, 0, 0, 0.2)
-          );
-          box-shadow: 0 0 20px rgba(255, 0, 0, 0.9);
-          animation: scan 1s ease-in-out infinite;
-        }
         @keyframes fadeInUp {
           from {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(15px);
           }
           to {
             opacity: 1;
@@ -214,10 +193,23 @@ export default function Home() {
           }
         }
         .animate-fadeInUp {
-          animation: fadeInUp 0.6s ease forwards;
+          animation: fadeInUp 0.7s ease forwards;
         }
-        .fade-out-when-done {
-          transition: opacity 0.5s ease;
+
+        @keyframes gradient-x {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+        .animate-gradient-x {
+          background-size: 200% 200%;
+          animation: gradient-x 3s ease infinite;
         }
       `}</style>
     </div>
