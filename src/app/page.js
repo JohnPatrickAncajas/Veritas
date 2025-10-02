@@ -2,14 +2,24 @@
 import { useState, useCallback } from "react";
 import Image from "next/image";
 
+// -------------------- Colors for display --------------------
 const colors = {
-  AI: "from-purple-400 to-pink-500",
-  Real: "from-green-400 to-teal-500",
   "2D": "from-yellow-400 to-orange-500",
   "3D": "from-blue-400 to-indigo-500",
+  AI: "from-purple-400 to-pink-500",
+  Real: "from-green-400 to-teal-500",
 };
 
-const CLASS_NAMES = ["AI", "Real", "2D", "3D"];
+// -------------------- Backend to display mapping --------------------
+const CLASS_MAP = {
+  "2d": "2D",
+  "3d": "3D",
+  ai: "AI",
+  real: "Real",
+};
+
+// -------------------- Ordered class names --------------------
+const CLASS_NAMES = ["2D", "3D", "AI", "Real"];
 
 export default function PredictPage() {
   const [preview, setPreview] = useState(null);
@@ -21,6 +31,7 @@ export default function PredictPage() {
 
   const BACKEND_URL = "https://veritas-backend-h720.onrender.com/predict";
 
+  // -------------------- Handle uploaded file --------------------
   const handleFile = useCallback(async (file) => {
     if (!file) return;
     setPreview(URL.createObjectURL(file));
@@ -43,9 +54,17 @@ export default function PredictPage() {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      const predictedLabel = data.top1?.class_label || "Unknown";
+      // Map backend label to display label
+      const predictedLabel = CLASS_MAP[data.top1?.class_label] || "Unknown";
       setSelected(predictedLabel);
-      setAllProbs(data.all_probs);
+
+      // Map all probabilities to display labels
+      const mappedProbs = {};
+      for (const [key, val] of Object.entries(data.all_probs)) {
+        const mappedKey = CLASS_MAP[key] || key;
+        mappedProbs[mappedKey] = val;
+      }
+      setAllProbs(mappedProbs);
     } catch (err) {
       setError(err.message || "Error");
       setSelected(null);
@@ -55,6 +74,7 @@ export default function PredictPage() {
     }
   }, []);
 
+  // -------------------- File input handlers --------------------
   const handleChange = (e) => handleFile(e.target.files?.[0]);
   const handleDrop = (e) => {
     e.preventDefault();
@@ -69,11 +89,9 @@ export default function PredictPage() {
   };
   const handleDragLeave = () => setDragging(false);
 
-  // Left pills
+  // -------------------- Staggered pill layout --------------------
   const leftPositions = ["justify-start", "justify-center", "justify-end", "justify-center"];
   const leftWidths = ["w-80", "w-72", "w-88", "w-64"];
-
-  // Right pills
   const rightPositions = ["justify-end", "justify-start", "justify-center", "justify-end"];
   const rightWidths = ["w-68", "w-84", "w-60", "w-76"];
 
@@ -85,7 +103,7 @@ export default function PredictPage() {
           Veritas – Face Type Detection
         </h1>
         <p className="text-gray-600 dark:text-gray-400 max-w-lg mx-auto">
-          Upload an image and Veritas will classify it as <b>AI</b>, <b>Real</b>, <b>2D</b>, or <b>3D</b>.
+          Upload an image and Veritas will classify it as <b>2D</b>, <b>3D</b>, <b>AI</b>, or <b>Real</b>.
         </p>
       </header>
 
@@ -192,7 +210,7 @@ export default function PredictPage() {
                   <tr key={cls}>
                     <td className="border border-gray-300 dark:border-gray-700 px-4 py-2 font-semibold">{cls}</td>
                     <td className="border border-gray-300 dark:border-gray-700 px-4 py-2">
-                      {(allProbs[cls.toLowerCase()] * 100).toFixed(1)}%
+                      {(allProbs[cls] * 100).toFixed(1)}%
                     </td>
                   </tr>
                 ))}
