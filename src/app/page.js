@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import Image from "next/image";
 
 // -------------------- Colors for display --------------------
@@ -29,8 +29,9 @@ export default function PredictPage() {
   const [error, setError] = useState(null);
   const [dragging, setDragging] = useState(false);
 
-  //  const BACKEND_URL = "http://127.0.0.1:5000/predict";
+  const inputRef = useRef(null);
   const BACKEND_URL = "https://veritas-backend-h720.onrender.com/predict";
+  // const BACKEND_URL = "http://127.0.0.1:5000/predict";
 
   // -------------------- Handle uploaded file --------------------
   const handleFile = useCallback(async (file) => {
@@ -78,7 +79,7 @@ export default function PredictPage() {
   // -------------------- File input handlers --------------------
   const handleChange = (e) => {
     handleFile(e.target.files?.[0]);
-    e.target.value = "";
+    e.target.value = ""; // Reset input so same file can be selected again
   };
   const handleDrop = (e) => {
     e.preventDefault();
@@ -140,12 +141,15 @@ export default function PredictPage() {
                   ? "border-blue-500 shadow-[0_0_25px_5px_rgba(59,130,246,0.5)]"
                   : "border-gray-300 dark:border-gray-600"
               }`}
+              onClick={() => inputRef.current?.click()} // Click container opens file picker
             >
               <input
+                ref={inputRef}
                 type="file"
                 accept="image/*"
                 disabled={loading}
                 onChange={handleChange}
+                onClick={(e) => (e.target.value = "")} // Reset input for repeated selection
                 className="absolute w-full h-full opacity-0 cursor-pointer"
               />
 
