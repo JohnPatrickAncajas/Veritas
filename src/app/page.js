@@ -29,7 +29,7 @@ export default function PredictPage() {
   const [error, setError] = useState(null);
   const [dragging, setDragging] = useState(false);
 
-  const BACKEND_URL = "http://127.0.0.1:5000/predict";
+  const BACKEND_URL = "https://veritas-backend-h720.onrender.com/predict";
 
   // -------------------- Handle uploaded file --------------------
   const handleFile = useCallback(async (file) => {
