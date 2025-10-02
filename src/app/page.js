@@ -4,6 +4,8 @@ import { useState, useCallback } from "react";
 const colors = {
   AI: "from-purple-400 to-pink-500",
   Real: "from-green-400 to-teal-500",
+  "2D": "from-yellow-400 to-orange-500",
+  "3D": "from-blue-400 to-indigo-500",
 };
 
 export default function Home() {
@@ -92,7 +94,7 @@ export default function Home() {
           {/* Title & Description */}
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold mb-2">
-              Veritas AI or Real Face Detection
+              Veritas Face Type Detection
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
               Drag a picture into the square below or click on it to upload.
@@ -152,7 +154,13 @@ export default function Home() {
               key={selected}
             >
               Detected as:{" "}
-              <span className="capitalize text-blue-500">{selected}</span>
+              <span
+                className={`capitalize bg-clip-text text-transparent bg-gradient-to-r ${
+                  colors[selected] || "from-gray-400 to-gray-600"
+                }`}
+              >
+                {selected}
+              </span>
             </p>
           )}
         </div>
