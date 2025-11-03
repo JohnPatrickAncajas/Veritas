@@ -24,29 +24,74 @@ export default function PredictPage() {
   const [allProbs, setAllProbs] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [noFace, setNoFace] = useState(false);
   const [dragging, setDragging] = useState(false);
 
   const inputRef = useRef(null);
   const lockRef = useRef(false);
 
-  const BACKEND_URL = "https://veritas-backend-h720.onrender.com/predict";
-  // const BACKEND_URL = "http://127.0.0.1:5000/predict";
+  // const BACKEND_BASE = "https://veritas-backend-h720.onrender.com";
+  const BACKEND_BASE = "http://localhost:5000";
+  const PREDICT_URL = `${BACKEND_BASE}/predict`;
+  const DETECT_URL = `${BACKEND_BASE}/detect_face`;
 
   const handleFile = useCallback(async (file) => {
     if (!file || lockRef.current) return;
     lockRef.current = true;
 
-    setPreview(URL.createObjectURL(file));
-    setSelected(null);
-    setAllProbs(null);
-    setError(null);
+  setPreview(URL.createObjectURL(file));
+  setSelected(null);
+  setAllProbs(null);
+  setError(null);
+  setNoFace(false);
     setLoading(true);
 
     try {
+      // First: call detect_face to ensure a face is present
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch(BACKEND_URL, { method: "POST", body: formData });
+      const detectRes = await fetch(DETECT_URL, { method: "POST", body: formData });
+      if (!detectRes.ok) {
+        const t = await detectRes.text();
+        throw new Error(`Face detection failed: ${t}`);
+      }
+      const detectData = await detectRes.json();
+      if (detectData.error) throw new Error(detectData.error || "Face detection error");
+
+      if (!detectData.face_present) {
+        // No face: show message, skip prediction
+        setNoFace(true);
+        setSelected(null);
+        setAllProbs(null);
+        return;
+      }
+
+      // Face detected — use the first returned crop (if present) as input to /predict
+      let predictInputFile = file;
+      const firstCropDataUrl = detectData.detections?.[0]?.crop;
+      if (firstCropDataUrl) {
+        try {
+          // Convert data URL to Blob via fetch, then to File
+          const blob = await (await fetch(firstCropDataUrl)).blob();
+          predictInputFile = new File([blob], "crop.jpg", { type: blob.type || "image/jpeg" });
+          // Update preview to show the cropped face
+          try {
+            const obj = URL.createObjectURL(blob);
+            setPreview(obj);
+          } catch (e) {
+            // fallback: keep existing preview
+          }
+        } catch (e) {
+          // If converting crop fails, fall back to original file
+          console.warn("Failed to convert crop data URL to Blob, using original file for prediction", e);
+        }
+      }
+
+      const predictForm = new FormData();
+      predictForm.append("file", predictInputFile);
+
+      const res = await fetch(PREDICT_URL, { method: "POST", body: predictForm });
       if (!res.ok) throw new Error("Prediction failed");
 
       const data = await res.json();
@@ -174,6 +219,9 @@ export default function PredictPage() {
             {/* Status messages */}
             {loading && <p className="mt-4 font-medium text-blue-500 animate-pulse">Processing...</p>}
             {error && !loading && <p className="mt-4 font-semibold text-lg text-red-500">{error}</p>}
+            {noFace && !loading && !error && (
+              <p className="mt-4 font-semibold text-lg text-gray-700 dark:text-gray-300">No face detected</p>
+            )}
             {selected && !loading && !error && (
               <p className="mt-6 font-bold text-xl opacity-0 animate-fadeInUp drop-shadow-lg" key={selected}>
                 Detected as:{" "}
