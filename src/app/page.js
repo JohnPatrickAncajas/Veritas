@@ -30,8 +30,8 @@ export default function PredictPage() {
   const inputRef = useRef(null);
   const lockRef = useRef(false);
 
-  // const BACKEND_BASE = "https://veritas-backend-h720.onrender.com";
-  const BACKEND_BASE = "http://localhost:5000";
+  const BACKEND_BASE = "https://veritas-backend-h720.onrender.com";
+  // const BACKEND_BASE = "http://localhost:5000";
   const PREDICT_URL = `${BACKEND_BASE}/predict`;
   const DETECT_URL = `${BACKEND_BASE}/detect_face`;
 
