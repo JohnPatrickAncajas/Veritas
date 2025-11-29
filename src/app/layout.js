@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import Navbar from "@/components/Navbar";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,22 +15,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Veritas",
-  description: "Face Type Detection App",
+  title: "Veritas | AI Forensic Scanner",
+  description: "Detect AI-generated images and deepfakes.",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
         <Navbar />
-
-        {/* Page Content */}
-        <main>{children}</main>
-
-        {/* Vercel Analytics */}
+        <main className="flex-1">
+          {children}
+        </main>
+        <Footer />
         <Analytics />
       </body>
     </html>

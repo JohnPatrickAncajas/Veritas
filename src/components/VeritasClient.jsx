@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback, useRef, useEffect } from "react";
 import Image from "next/image";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "../utils/supabase/client";
 import { 
   Scan, 
   AlertTriangle, 
