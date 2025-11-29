@@ -1,6 +1,6 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '../utils/supabase/server'
 import { cookies } from 'next/headers'
-import VeritasEducational from '@/components/VeritasClient' 
+import VeritasEducational from '../components/VeritasClient' 
 
 export default async function Page() {
   const cookieStore = await cookies()
