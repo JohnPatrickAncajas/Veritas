@@ -38,6 +38,7 @@ export default function PredictPage() {
     if (!file || lockRef.current) return;
     lockRef.current = true;
   
+    // Temporary preview of the whole image; may be replaced by crop later
     setPreview(URL.createObjectURL(file));
     setSelected(null);
     setAllProbs(null);
@@ -48,7 +49,7 @@ export default function PredictPage() {
       const formData = new FormData();
       formData.append("file", file);
   
-      // 1) Human face detection
+      // ----- 1) Human face detection (MTCNN) -----
       const humanRes = await fetch(HUMAN_FACE_URL, { method: "POST", body: formData });
       const humanData = await humanRes.json();
       if (!humanRes.ok) {
@@ -56,19 +57,22 @@ export default function PredictPage() {
       }
   
       let anyFace = false;
+      let cropDataUrl = null; // will hold the chosen crop
   
-      if (humanData.human_face_present) {
+      if (humanData.human_face_present && humanData.detections?.length > 0) {
         anyFace = true;
+        cropDataUrl = humanData.detections[0].crop; // MTCNN face crop
       } else {
-        // 2) Fallback: 2D/anime detector
+        // ----- 2) Fallback: 2D/anime detector (YOLO) -----
         const faceRes = await fetch(FACE_2D_URL, { method: "POST", body: formData });
+        const faceData = await faceRes.json();
         if (!faceRes.ok) {
           throw new Error(faceData.error || "2D face detection failed");
         }
-        const faceData = await faceRes.json();
   
-        if (faceData.face_present) {
+        if (faceData.face_present && faceData.detections?.length > 0) {
           anyFace = true;
+          cropDataUrl = faceData.detections[0].crop; // YOLO 2D crop
         }
       }
   
@@ -76,8 +80,25 @@ export default function PredictPage() {
         throw new Error("No face detected (human or 2D) in the image.");
       }
   
-      // 3) If some face is present, call classifier
-      const predictRes = await fetch(BACKEND_URL, { method: "POST", body: formData });
+      // If we have a crop, show it as preview
+      if (cropDataUrl) {
+        setPreview(cropDataUrl);
+      }
+  
+      // ----- 3) Build payload for /predict using the crop -----
+      const predictFormData = new FormData();
+      if (cropDataUrl) {
+        // Convert data URL -> Blob -> File-like for backend
+        const cropRes = await fetch(cropDataUrl);
+        const cropBlob = await cropRes.blob();
+        predictFormData.append("file", cropBlob, "face.jpg");
+      } else {
+        // Fallback: original file
+        predictFormData.append("file", file);
+      }
+  
+      // ----- 4) Call classifier -----
+      const predictRes = await fetch(BACKEND_URL, { method: "POST", body: predictFormData });
       if (!predictRes.ok) throw new Error("Prediction failed");
   
       const data = await predictRes.json();
@@ -103,6 +124,7 @@ export default function PredictPage() {
       }, 50);
     }
   }, []);
+  
   
 
   const handleChange = (e) => {
