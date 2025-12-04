@@ -163,6 +163,7 @@ export default function VeritasClient({ fetchedData }) {
   const [scanId, setScanId] = useState(null);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [useFaceDetectors, setUseFaceDetectors] = useState(true);
 
   const fileInputRef = useRef(null);
   const supabase = createClient();
@@ -284,7 +285,7 @@ export default function VeritasClient({ fetchedData }) {
     }
   
     if (!anyFace) {
-      throw new Error("No face detected (human, ai, or 2D) in the image.");
+      throw new Error("No face detected in the image.");
     }
   
     // 3) Build payload for /predict using the crop (or original as fallback)
@@ -309,6 +310,19 @@ export default function VeritasClient({ fetchedData }) {
     }
   
     return predictData;
+  };
+
+  const getDirectPrediction = async (fileToSend) => {
+    // Direct prediction without face detectors
+    const formData = new FormData();
+    formData.append("file", fileToSend);
+
+    const predictRes = await fetch(BACKEND_URL, { method: "POST", body: formData });
+    if (!predictRes.ok) throw new Error("AI prediction server is busy. Please try again.");
+    const predictData = await predictRes.json();
+    if (predictData.error) throw new Error(predictData.error);
+
+    return predictData;
   };  
 
   const analyzeImage = async () => {
@@ -320,7 +334,7 @@ export default function VeritasClient({ fetchedData }) {
     try {
       const [uploadResult, aiResult] = await Promise.all([
         uploadToCloudinary(file),
-        getPrediction(file),
+        useFaceDetectors ? getPrediction(file) : getDirectPrediction(file),
       ]);
     
       // If a crop was returned, show it instead of the full image
@@ -482,14 +496,25 @@ export default function VeritasClient({ fetchedData }) {
                     )}
                   </div>
 
-                  <div className="mt-8 flex flex-wrap gap-4 justify-center">
+                  <div className="mt-8 space-y-4">
                     {!result && !loading && (
-                      <button 
-                        onClick={analyzeImage}
-                        className="px-10 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-3"
-                      >
-                        <Brain className="w-5 h-5" /> Run Analysis
-                      </button>
+                      <div className="flex flex-col items-center gap-4">
+                        <button 
+                          onClick={analyzeImage}
+                          className="px-10 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-3"
+                        >
+                          <Brain className="w-5 h-5" /> Run Analysis
+                        </button>
+                        <label className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 cursor-pointer hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={useFaceDetectors}
+                            onChange={(e) => setUseFaceDetectors(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 focus:ring-2 transition-colors"
+                          />
+                          <span className="font-medium">Use Face Detectors?</span>
+                        </label>
+                      </div>
                     )}
                     {result && !loading && (
                       <button 
