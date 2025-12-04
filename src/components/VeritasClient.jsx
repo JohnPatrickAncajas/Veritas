@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 
 const BACKEND_URL = "https://veritas-backend-h720.onrender.com/predict";
+const HUMAN_FACE_URL = "http://127.0.0.1:5000/detect_human_face";
+const FACE_2D_URL = "http://127.0.0.1:5000/detect_face";
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dsragzhhv/image/upload";
 const UPLOAD_PRESET = "veritas_unsigned";
 
@@ -142,6 +144,13 @@ const COLORS = {
   }
 };
 
+const CLASS_MAP = {
+  "2d": "2D",
+  "3d": "3D",
+  ai: "AI",
+  real: "Real",
+};
+
 export default function VeritasClient({ fetchedData }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -243,17 +252,64 @@ export default function VeritasClient({ fetchedData }) {
   };
 
   const getPrediction = async (fileToSend) => {
+    // 1) Use original file for detectors
     const formData = new FormData();
     formData.append("file", fileToSend);
-    
-    const response = await fetch(BACKEND_URL, { 
-      method: "POST", 
-      body: formData 
-    });
-    
-    if (!response.ok) throw new Error("AI prediction server is busy. Please try again.");
-    return await response.json();
-  };
+  
+    // ----- 1) Human face detection (MTCNN) -----
+    const humanRes = await fetch(HUMAN_FACE_URL, { method: "POST", body: formData });
+    const humanData = await humanRes.json();
+    if (!humanRes.ok) {
+      throw new Error(humanData.error || "Human face detection failed");
+    }
+  
+    let anyFace = false;
+    let cropDataUrl = null;
+  
+    if (humanData.human_face_present && humanData.detections?.length > 0) {
+      anyFace = true;
+      cropDataUrl = humanData.detections[0].crop; // MTCNN face crop
+    } else {
+      // ----- 2) Fallback: 2D/anime detector (YOLO) -----
+      const faceRes = await fetch(FACE_2D_URL, { method: "POST", body: formData });
+      const faceData = await faceRes.json();
+      if (!faceRes.ok) {
+        throw new Error(faceData.error || "2D face detection failed");
+      }
+  
+      if (faceData.face_present && faceData.detections?.length > 0) {
+        anyFace = true;
+        cropDataUrl = faceData.detections[0].crop; // YOLO 2D crop
+      }
+    }
+  
+    if (!anyFace) {
+      throw new Error("No face detected (human, ai, or 2D) in the image.");
+    }
+  
+    // 3) Build payload for /predict using the crop (or original as fallback)
+    const predictFormData = new FormData();
+    if (cropDataUrl) {
+      const cropRes = await fetch(cropDataUrl);
+      const cropBlob = await cropRes.blob();
+      predictFormData.append("file", cropBlob, "face.jpg");
+    } else {
+      predictFormData.append("file", fileToSend);
+    }
+  
+    // 4) Call classifier
+    const predictRes = await fetch(BACKEND_URL, { method: "POST", body: predictFormData });
+    if (!predictRes.ok) throw new Error("AI prediction server is busy. Please try again.");
+    const predictData = await predictRes.json();
+    if (predictData.error) throw new Error(predictData.error);
+  
+    // Attach crop so UI can update preview
+    if (cropDataUrl) {
+      predictData._cropDataUrl = cropDataUrl;
+    }
+  
+    return predictData;
+  };  
 
   const analyzeImage = async () => {
     if (!file) return;
@@ -264,45 +320,49 @@ export default function VeritasClient({ fetchedData }) {
     try {
       const [uploadResult, aiResult] = await Promise.all([
         uploadToCloudinary(file),
-        getPrediction(file)
+        getPrediction(file),
       ]);
-
-      if (aiResult.error) throw new Error(aiResult.error);
-
+    
+      // If a crop was returned, show it instead of the full image
+      if (aiResult._cropDataUrl) {
+        setPreview(aiResult._cropDataUrl);
+      }
+    
       setResult(aiResult);
-
-      const predictedLabel = aiResult.top1?.class_label || "Unknown";
+    
+      const rawLabel = aiResult.top1?.class_label || "Unknown";
+      const predictedLabel = CLASS_MAP[rawLabel] || rawLabel;
+    
       const probValues = Object.values(aiResult.all_probs);
       const calculatedConfidence = Math.max(...probValues);
-
+    
       const { data: insertData, error: dbError } = await supabase
-        .from('scans')
+        .from("scans")
         .insert({
           filename: file.name,
           image_url: uploadResult.secure_url,
           prediction: predictedLabel,
           confidence: calculatedConfidence,
           prob_real: aiResult.all_probs.real || 0,
-          prob_2d: aiResult.all_probs['2d'] || 0,
-          prob_3d: aiResult.all_probs['3d'] || 0,
+          prob_2d: aiResult.all_probs["2d"] || 0,
+          prob_3d: aiResult.all_probs["3d"] || 0,
           prob_ai: aiResult.all_probs.ai || 0,
         })
         .select()
         .single();
-
+    
       if (dbError) {
         console.error("Database Error:", JSON.stringify(dbError, null, 2));
       } else if (insertData) {
         setScanId(insertData.id);
       }
-
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
-
+  };    
+  
   const handleFeedback = async (status) => {
     if (!scanId) return;
     try {
